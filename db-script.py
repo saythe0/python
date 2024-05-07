@@ -12,7 +12,7 @@ cursor = conn.cursor()
 # Создаем таблицу "Пользователи"
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS Users (
-        id INTEGER PRIMARY KEY,
+        user_id INTEGER PRIMARY KEY,
         name TEXT,
         age INTEGER
     )
@@ -21,10 +21,10 @@ cursor.execute('''
 # Создаем таблицу "Задачи"
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS Tasks (
-        id INTEGER PRIMARY KEY,
+        task_id INTEGER PRIMARY KEY,
         task TEXT,
         user_id INTEGER,
-        FOREIGN KEY(user_id) REFERENCES Users(id)
+        FOREIGN KEY(user_id) REFERENCES Users(user_id)
     )
 ''')
 
@@ -32,11 +32,23 @@ cursor.execute('''
 def add_user(name, age):
     cursor.execute('INSERT INTO Users (name, age) VALUES (?, ?)', (name, age))
     conn.commit()
+    text_error.delete('1.0', tk.END)
 
 # Функция для добавления новой задачи в базу данных
 def add_task(task, user_id):
-    cursor.execute('INSERT INTO Tasks (task, user_id) VALUES (?, ?)', (task, user_id))
-    conn.commit()
+    cursor.execute('SELECT * FROM Users WHERE user_id = ?', (user_id,))
+    check = cursor.fetchone()
+    if check:
+        cursor.execute('INSERT INTO Tasks (task, user_id) VALUES (?, ?)', (task, user_id))
+        conn.commit()
+        text_error.delete('1.0', tk.END)
+    else:
+        display_errors(f"Пользователь с user_id {user_id} не найден")
+
+# Функция для отображения ошибок
+def display_errors(text):
+    text_error.delete('1.0', tk.END)  # Очистка текстового поля перед выводом ошибки
+    text_error.insert(tk.END, f"{text}")
 
 # Функция для отображения данных о пользователях
 def display_users():
@@ -74,9 +86,9 @@ def add_task_handler():
 
 # Создаем графический интерфейс с использованием библиотеки tkinter
 window = tk.Tk()
-window.title("Простое приложение")
+window.title("Python DB")
 
-label = tk.Label(window, text="Привет, это простое приложение!")
+label = tk.Label(window, text="Работа с базой данных на Python!")
 label.pack()
 
 # Поля для ввода данных о пользователе
@@ -102,6 +114,10 @@ entry_user_id.pack()
 
 button_add_task = tk.Button(window, text="Добавить задачу", command=add_task_handler)
 button_add_task.pack()
+
+# Текстовое поле для вывода ошибок
+text_error = tk.Text(window, width=50, height=2)
+text_error.pack()
 
 # Текстовые поля для вывода данных
 text_users = tk.Text(window, width=50, height=10)
